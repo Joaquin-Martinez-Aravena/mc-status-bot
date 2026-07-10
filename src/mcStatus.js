@@ -24,8 +24,8 @@ function normalize(apiData) {
   return {
     online: isReallyOnline(apiData),
     players: {
-      online: (apiData && apiData.players && apiData.players.online) || 0,
-      max: (apiData && apiData.players && apiData.players.max) || 0,
+      online: apiData?.players?.online ?? 0,
+      max: apiData?.players?.max ?? 0,
     },
     motd: extractMotd(apiData),
     iconBase64: (apiData && apiData.icon) || null,
