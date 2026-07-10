@@ -2,14 +2,14 @@
 title: mc-status-bot — Diseño
 date: 2026-07-10
 status: aprobado-pendiente-revision
-author: Joaquin (con Claude)
+author: el mantenedor (con Claude)
 ---
 
 # mc-status-bot — Documento de Diseño
 
 ## Contexto
 
-Joaquin administra un servidor de Minecraft alojado en **Aternos** y quiere poder
+El mantenedor administra un servidor de Minecraft alojado en **Aternos** y quiere poder
 ver su estado (online / offline y cuántos jugadores hay) **sin tener que abrir la
 web de Aternos**. Hoy la única forma es entrar al panel web, lo cual es lento y
 molesto para el resto de la comunidad del Discord.
@@ -24,7 +24,7 @@ está prendido y cuánta gente hay, sin salir de Discord.
 
 ## Cómo funciona la fuente de datos (y la trampa de Aternos)
 
-`mcsrvstat.us` **no se conecta a Aternos ni a la cuenta de Joaquin**. Hace un
+`mcsrvstat.us` **no se conecta a Aternos ni a la cuenta del mantenedor**. Hace un
 *ping/query* estándar del protocolo de Minecraft directo a la IP pública del server
 (`<algo>.aternos.me`) — lo mismo que hace el cliente de Minecraft en la lista de
 servidores. Devuelve JSON y cachea el resultado ~5 minutos. Es una consulta pública
@@ -59,7 +59,7 @@ Referencias:
 - **Fix fake-offline de Aternos** (workaround de MOTD descrito arriba).
 
 ### Fuera (explícitamente NO en v1)
-- Mostrar la versión del server (Joaquin lo descartó).
+- Mostrar la versión del server (descartado).
 - Comando `/jugadores` (lista de nombres) — requiere `enable-query=true`; queda para
   después.
 - **Encender/apagar el server desde Discord** — Aternos lo bloquea activamente
@@ -70,7 +70,7 @@ Referencias:
 Bot de **Node.js de un solo proceso** usando **discord.js v14** + **dotenv**.
 Usa el `fetch` nativo de Node (18+), sin dependencias HTTP extra.
 
-Separación en capas (estilo que Joaquin ya aplica en Python):
+Separación en capas limpia (misma idea que se aplica en Python):
 - **datos** (`mcStatus.js`): habla con la API y normaliza.
 - **presentación** (`statusEmbed.js`): convierte datos → embed / texto de presencia.
 - **wiring de Discord** (`index.js`): eventos, comando, loop de sondeo.
@@ -82,8 +82,8 @@ Motivo: bot-hosting.net arranca un solo archivo; así no hay que correr un scrip
 aparte en cada deploy.
 
 ### Decisión: frecuencia de sondeo (CONFIRMADO: 2 horas)
-`POLL_INTERVAL_MINUTES` configurable, **default 120 (2 horas)**. Joaquin lo
-confirmó explícitamente. El aviso al canal ocurre **solo en la transición** (no en
+`POLL_INTERVAL_MINUTES` configurable, **default 120 (2 horas)**, confirmado
+explícitamente. El aviso al canal ocurre **solo en la transición** (no en
 cada ciclo), así que el canal se mantiene limpio.
 
 Tradeoff aceptado: con sondeo cada 2h, la presencia y el aviso *"el server se
@@ -203,7 +203,7 @@ El repo va a GitHub público, así que **ningún dato personal ni sensible** pue
 quedar en el código, la documentación o el historial de git. Reglas:
 
 - **Nunca** en el repo: `DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`, `SERVER_IP` real,
-  `STATUS_CHANNEL_ID`, nombre real de Joaquin, correo, ni ninguna IP/hostname real
+  `STATUS_CHANNEL_ID`, nombre real del mantenedor, correo, ni ninguna IP/hostname real
   del servidor. Todo eso vive solo en `.env` (gitignored) y en el panel de
   bot-hosting.net.
 - `.env.example` usa **placeholders genéricos** (ej: `SERVER_IP=example.aternos.me`,
@@ -215,9 +215,8 @@ quedar en el código, la documentación o el historial de git. Reglas:
   público (ej: el usuario de GitHub) antes del primer push, y revisar que el commit
   inicial no exponga datos personales (si los expone, reescribir la autoría antes de
   publicar).
-- Este documento de diseño referencia a "Joaquin" solo como contexto interno; si el
-  repo se hace público, la carpeta `docs/superpowers/specs/` puede excluirse del push
-  o anonimizarse. **Se decide en el plan de implementación / al momento del push.**
+- Este documento fue anonimizado antes de publicar: no contiene el nombre real,
+  correo ni contexto personal del mantenedor.
 
 ## Limitaciones conocidas
 - El fix de fake-offline de Aternos no es 100% infalible (caché de 5 min de la API +
