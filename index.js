@@ -50,7 +50,11 @@ async function pollAndUpdate() {
 
 client.once('ready', async () => {
   console.log(`Bot conectado como ${client.user.tag}`);
-  await registerCommands();
+  try {
+    await registerCommands();
+  } catch (err) {
+    console.error('No se pudo registrar el comando /estado:', err.message);
+  }
   await pollAndUpdate();
   setInterval(pollAndUpdate, config.pollIntervalMinutes * 60 * 1000);
 });
@@ -65,7 +69,7 @@ client.on('interactionCreate', async (interaction) => {
     const { embed, files } = buildStatusEmbed(status);
     await interaction.editReply({ embeds: [embed], files });
   } catch (err) {
-    console.error(err);
+    console.error('Error en /estado:', err.message);
     await interaction.editReply('No pude consultar el estado ahora. Intenta de nuevo en un momento.');
   }
 });
