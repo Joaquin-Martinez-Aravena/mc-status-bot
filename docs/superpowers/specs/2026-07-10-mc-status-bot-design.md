@@ -81,18 +81,15 @@ registra **dentro del evento `ready`** con scope de **guild** (aparece al instan
 Motivo: bot-hosting.net arranca un solo archivo; así no hay que correr un script
 aparte en cada deploy.
 
-### Decisión: frecuencia de sondeo (requiere confirmación de Joaquin)
-Inicialmente Joaquin pidió "actualizar cada 2 horas para no spamear mod-logs". Ese
-temor era por el **canal**. Como el aviso al canal ahora ocurre **solo en la
-transición** (no en cada ciclo), sondear más seguido **ya no spamea**.
+### Decisión: frecuencia de sondeo (CONFIRMADO: 2 horas)
+`POLL_INTERVAL_MINUTES` configurable, **default 120 (2 horas)**. Joaquin lo
+confirmó explícitamente. El aviso al canal ocurre **solo en la transición** (no en
+cada ciclo), así que el canal se mantiene limpio.
 
-Recomendación: `POLL_INTERVAL_MINUTES` configurable, **default 5 minutos**. Así:
-- la presencia queda casi en tiempo real,
-- el aviso "el server se prendió" llega en ~5 min en vez de hasta 2 horas,
-- el canal sigue limpio (solo postea en cambios reales).
-
-Si Joaquin prefiere respetar las 2h literales, es cambiar una variable de entorno.
-**Este punto se confirma en la revisión de la spec.**
+Tradeoff aceptado: con sondeo cada 2h, la presencia y el aviso *"el server se
+prendió"* pueden tardar **hasta 2 horas** en reflejarse. Si en el futuro se quiere
+más inmediatez, basta bajar `POLL_INTERVAL_MINUTES` (el canal no se ensucia porque el
+aviso sigue siendo solo-en-cambio).
 
 ## Estructura de archivos
 
@@ -122,7 +119,7 @@ Lee del entorno y valida al arrancar (si falta algo obligatorio, error claro y
 - `GUILD_ID` (obligatorio — registro instantáneo del comando)
 - `SERVER_IP` (obligatorio — ej: `miserver.aternos.me`)
 - `STATUS_CHANNEL_ID` (obligatorio — canal para avisos de cambio de estado)
-- `POLL_INTERVAL_MINUTES` (opcional, default 5)
+- `POLL_INTERVAL_MINUTES` (opcional, default 120 = 2 horas)
 
 ### `src/mcStatus.js`
 - `async getServerStatus(ip)` → hace `fetch` a `https://api.mcsrvstat.us/3/{ip}`
@@ -199,6 +196,28 @@ inicializa con el primer resultado sin notificar.
 3. En bot-hosting.net: conectar el repo de GitHub (o subir archivos), definir las
    variables de entorno en su panel, y arrancar `index.js`.
 4. bot-hosting.net corre 24/7 → la auto-presencia y los avisos funcionan siempre.
+
+## Privacidad y datos personales (docs y repo público)
+
+El repo va a GitHub público, así que **ningún dato personal ni sensible** puede
+quedar en el código, la documentación o el historial de git. Reglas:
+
+- **Nunca** en el repo: `DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`, `SERVER_IP` real,
+  `STATUS_CHANNEL_ID`, nombre real de Joaquin, correo, ni ninguna IP/hostname real
+  del servidor. Todo eso vive solo en `.env` (gitignored) y en el panel de
+  bot-hosting.net.
+- `.env.example` usa **placeholders genéricos** (ej: `SERVER_IP=example.aternos.me`,
+  `DISCORD_TOKEN=your-bot-token-here`), nunca valores reales.
+- El **README** y toda doc pública usan valores de ejemplo/placeholder, no capturas
+  ni datos que revelen el server o el Discord reales.
+- **Autoría de commits:** usar un identificador neutro/handle en lugar del nombre y
+  correo personal. Configurar `user.name` y `user.email` del repo con un alias
+  público (ej: el usuario de GitHub) antes del primer push, y revisar que el commit
+  inicial no exponga datos personales (si los expone, reescribir la autoría antes de
+  publicar).
+- Este documento de diseño referencia a "Joaquin" solo como contexto interno; si el
+  repo se hace público, la carpeta `docs/superpowers/specs/` puede excluirse del push
+  o anonimizarse. **Se decide en el plan de implementación / al momento del push.**
 
 ## Limitaciones conocidas
 - El fix de fake-offline de Aternos no es 100% infalible (caché de 5 min de la API +
