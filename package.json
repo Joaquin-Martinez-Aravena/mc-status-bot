@@ -1,0 +1,15 @@
+{
+  "name": "mc-status-bot",
+  "version": "1.0.0",
+  "description": "Discord bot to check a Minecraft (Aternos) server status via mcsrvstat.us",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  }
+}
