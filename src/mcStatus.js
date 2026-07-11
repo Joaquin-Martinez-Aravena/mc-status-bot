@@ -4,8 +4,8 @@
 const net = require('net');
 
 const DEFAULT_PORT = 25565;
-const DEFAULT_TIMEOUT_MS = 8000;
-const DEFAULT_RETRIES = 3;
+const DEFAULT_TIMEOUT_MS = 6000;
+const DEFAULT_RETRIES = 6;
 const PROTOCOL_VERSION = 767; // 1.21; solo se usa para el handshake de status
 const OFFLINE = { online: false, players: { online: 0, max: 0, list: [] }, motd: '', iconBase64: null };
 
@@ -163,10 +163,18 @@ async function getServerStatus(address, options = {}) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const data = await pingOnce(host, port, timeoutMs);
+      const motd = motdToText(data?.description).trim();
+      console.log(
+        `[mcStatus] intento ${attempt}/${retries} -> respuesta OK | players=${data?.players?.online ?? '?'}/${data?.players?.max ?? '?'} | motd="${motd.slice(0, 60)}"`,
+      );
       return normalize(data);
     } catch (err) {
-      if (attempt === retries) return { ...OFFLINE };
-      await delay(500);
+      console.log(`[mcStatus] intento ${attempt}/${retries} -> fallo: ${err.message}`);
+      if (attempt === retries) {
+        console.log(`[mcStatus] todos los intentos fallaron -> se asume OFFLINE`);
+        return { ...OFFLINE };
+      }
+      await delay(400);
     }
   }
   return { ...OFFLINE };
