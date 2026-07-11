@@ -3,7 +3,7 @@ const {
   SlashCommandBuilder, ActivityType,
 } = require('discord.js');
 const { getConfig } = require('./config');
-const { getServerStatus } = require('./src/mcStatus');
+const { getServerStatus, testTcpConnect } = require('./src/mcStatus');
 const {
   buildStatusEmbed, buildPresenceText, buildTransitionMessage,
 } = require('./src/statusEmbed');
@@ -55,6 +55,16 @@ client.once('clientReady', async () => {
   } catch (err) {
     console.error('No se pudo registrar el comando /estado:', err.message);
   }
+
+  // Diagnostico de conectividad de salida (una vez al arrancar).
+  for (const t of [
+    { label: 'salida TCP (1.1.1.1:53)', host: '1.1.1.1', port: 53 },
+    { label: 'MC publico (mc.hypixel.net:25565)', host: 'mc.hypixel.net', port: 25565 },
+  ]) {
+    const ok = await testTcpConnect(t.host, t.port);
+    console.log(`[diag] ${t.label}: ${ok ? 'CONECTA OK' : 'FALLA'}`);
+  }
+
   await pollAndUpdate();
   setInterval(pollAndUpdate, config.pollIntervalMinutes * 60 * 1000);
 });

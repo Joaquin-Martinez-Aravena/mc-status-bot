@@ -151,6 +151,24 @@ function pingOnce(host, port, timeoutMs) {
   });
 }
 
+// Diagnostico: intenta una conexion TCP simple y dice si conecta (true) o no.
+function testTcpConnect(host, port, timeoutMs = 6000) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.on('connect', () => finish(true));
+    socket.on('timeout', () => finish(false));
+    socket.on('error', () => finish(false));
+  });
+}
+
 // Consulta el estado del servidor via SLP directo, con reintentos para absorber
 // el ECONNRESET transitorio de Aternos. Si todos los intentos fallan, se asume
 // que el server esta offline/dormido.
@@ -180,4 +198,4 @@ async function getServerStatus(address, options = {}) {
   return { ...OFFLINE };
 }
 
-module.exports = { getServerStatus, normalize, isReallyOnline, motdToText, extractPlayerList };
+module.exports = { getServerStatus, normalize, isReallyOnline, motdToText, extractPlayerList, testTcpConnect };
