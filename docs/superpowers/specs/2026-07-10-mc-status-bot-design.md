@@ -15,36 +15,40 @@ web de Aternos**. Hoy la única forma es entrar al panel web, lo cual es lento y
 molesto para el resto de la comunidad del Discord.
 
 La solución es un bot de Discord que consulta el estado del servidor a través de la
-API pública `mcsrvstat.us` y lo expone en Discord de dos formas: bajo demanda
-(comando `/estado`) y de forma pasiva (la presencia del propio bot + avisos al canal
-cuando el estado cambia).
+un **Server List Ping (SLP) directo** al servidor y lo expone en Discord de dos
+formas: bajo demanda (comando `/estado`) y de forma pasiva (la presencia del propio
+bot + avisos al canal cuando el estado cambia).
 
 Resultado esperado: cualquier miembro del Discord sabe de un vistazo si el server
 está prendido y cuánta gente hay, sin salir de Discord.
 
 ## Cómo funciona la fuente de datos (y la trampa de Aternos)
 
-`mcsrvstat.us` **no se conecta a Aternos ni a la cuenta del mantenedor**. Hace un
-*ping/query* estándar del protocolo de Minecraft directo a la IP pública del server
-(`<algo>.aternos.me`) — lo mismo que hace el cliente de Minecraft en la lista de
-servidores. Devuelve JSON y cachea el resultado ~5 minutos. Es una consulta pública
-legítima; no automatiza el encendido, así que no viola los ToS de Aternos.
+> **Cambio de enfoque respecto al diseño original.** El plan inicial usaba la API
+> pública `mcsrvstat.us`. En pruebas contra un server real de Aternos se descubrió
+> que **mcsrvstat.us y mcstatus.io reportan el server como offline aunque esté lleno**:
+> Aternos les bloquea/resetea las consultas a esos checkers de terceros. La solución
+> fiable es hacer el ping nosotros mismos.
 
-**Trampa conocida de Aternos:** cuando Aternos *suspende* un server por inactividad,
-no responde "offline" limpio. Responde al ping con `online: true` pero con el MOTD
-`"This server is offline."`. Es decir, cualquier checker puede reportar el server
-como **online cuando en realidad está dormido**. Los propios devs dicen que *no hay
-método garantizado* para detectarlo.
+El bot hace un **Server List Ping (SLP)** directo por TCP a `host:port`: envía el
+handshake + status request del protocolo de Minecraft y parsea el JSON de respuesta
+(jugadores, MOTD, favicon). Es exactamente lo que hace el cliente de Minecraft en la
+lista de servidores. No usa librerías ni APIs externas (solo el módulo `net` de Node).
 
-**Workaround que implementa el bot:** tratar el server como **OFFLINE** si la API
-dice offline **O** si el MOTD contiene el texto `"this server is offline"`
-(case-insensitive). No es infalible (por el caché de 5 min y el truco de Aternos),
-pero cubre el caso normal. Queda documentado como limitación conocida.
+**Detalle de Aternos:** el primer intento a veces devuelve `ECONNRESET` (reset
+transitorio). Por eso el ping **reintenta** (default 3 veces) antes de concluir que el
+server está offline. Si todos los intentos fallan (timeout/reset/refused), se asume
+**offline/dormido**.
+
+**Trampa conocida de Aternos:** un server *suspendido* puede responder con el MOTD
+`"This server is offline."` en vez de rechazar la conexión. **Workaround:** tratar el
+server como **OFFLINE** si el MOTD contiene `"this server is offline"`
+(case-insensitive). No es infalible, pero cubre el caso normal.
 
 Referencias:
-- https://api.mcsrvstat.us/
-- https://mcstatus.io/about (caso Aternos)
+- https://mcstatus.io/about (Aternos bloquea a los checkers de terceros)
 - https://support.aternos.org/hc/en-us/articles/360041686352
+- Protocolo SLP: https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping
 
 ## Alcance
 
