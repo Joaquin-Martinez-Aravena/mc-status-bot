@@ -4,8 +4,8 @@
 const net = require('net');
 
 const DEFAULT_PORT = 25565;
-const DEFAULT_TIMEOUT_MS = 6000;
-const DEFAULT_RETRIES = 6;
+const DEFAULT_TIMEOUT_MS = 5000;
+const DEFAULT_RETRIES = 4;
 const PROTOCOL_VERSION = 767; // 1.21; solo se usa para el handshake de status
 const OFFLINE = { online: false, players: { online: 0, max: 0, list: [] }, motd: '', iconBase64: null };
 
@@ -151,24 +151,6 @@ function pingOnce(host, port, timeoutMs) {
   });
 }
 
-// Diagnostico: intenta una conexion TCP simple y dice si conecta (true) o no.
-function testTcpConnect(host, port, timeoutMs = 6000) {
-  return new Promise((resolve) => {
-    const socket = net.createConnection({ host, port });
-    let done = false;
-    const finish = (ok) => {
-      if (done) return;
-      done = true;
-      socket.destroy();
-      resolve(ok);
-    };
-    socket.setTimeout(timeoutMs);
-    socket.on('connect', () => finish(true));
-    socket.on('timeout', () => finish(false));
-    socket.on('error', () => finish(false));
-  });
-}
-
 // Consulta el estado del servidor via SLP directo, con reintentos para absorber
 // el ECONNRESET transitorio de Aternos. Si todos los intentos fallan, se asume
 // que el server esta offline/dormido.
@@ -178,24 +160,20 @@ async function getServerStatus(address, options = {}) {
   const [host, portStr] = String(address).split(':');
   const port = parseInt(portStr, 10) || DEFAULT_PORT;
 
+  let lastError = null;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const data = await pingOnce(host, port, timeoutMs);
-      const motd = motdToText(data?.description).trim();
-      console.log(
-        `[mcStatus] intento ${attempt}/${retries} -> respuesta OK | players=${data?.players?.online ?? '?'}/${data?.players?.max ?? '?'} | motd="${motd.slice(0, 60)}"`,
-      );
       return normalize(data);
     } catch (err) {
-      console.log(`[mcStatus] intento ${attempt}/${retries} -> fallo: ${err.message}`);
-      if (attempt === retries) {
-        console.log(`[mcStatus] todos los intentos fallaron -> se asume OFFLINE`);
-        return { ...OFFLINE };
-      }
-      await delay(400);
+      lastError = err;
+      if (attempt < retries) await delay(400);
     }
   }
+  console.error(
+    `[mcStatus] ${host}:${port} sin respuesta tras ${retries} intentos (${lastError && lastError.message}); se asume OFFLINE`,
+  );
   return { ...OFFLINE };
 }
 
-module.exports = { getServerStatus, normalize, isReallyOnline, motdToText, extractPlayerList, testTcpConnect };
+module.exports = { getServerStatus, normalize, isReallyOnline, motdToText, extractPlayerList };
