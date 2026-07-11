@@ -63,15 +63,20 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName !== 'estado') return;
 
-  await interaction.deferReply();
+  // deferReply va DENTRO del try: si Discord lo rechaza (ej: interaccion ya
+  // atendida), solo logueamos, nunca crasheamos el proceso.
   try {
+    await interaction.deferReply();
     const status = await getServerStatus(config.serverIp);
     const { embed, files } = buildStatusEmbed(status);
     await interaction.editReply({ embeds: [embed], files });
   } catch (err) {
     console.error('Error en /estado:', err.message);
-    await interaction.editReply('No pude consultar el estado ahora. Intenta de nuevo en un momento.');
   }
 });
+
+// Redes de seguridad: ningun error suelto debe tumbar un bot que corre 24/7.
+client.on('error', (err) => console.error('Error del cliente de Discord:', err.message));
+process.on('unhandledRejection', (err) => console.error('Rechazo no manejado:', err && err.message ? err.message : err));
 
 client.login(config.token);
