@@ -37,3 +37,23 @@ test('buildStatusEmbed adjunta el icono cuando hay iconBase64 png', () => {
   });
   assert.strictEqual(files.length, 1);
 });
+
+test('buildStatusEmbed incluye el campo Conectados con los nombres', () => {
+  const { embed } = buildStatusEmbed({
+    online: true,
+    players: { online: 2, max: 20, list: ['HayserS_', 'Feruub'] },
+    motd: 'Hola',
+    iconBase64: null,
+  });
+  const field = embed.data.fields.find((f) => f.name === 'Conectados');
+  assert.ok(field, 'deberia existir el campo Conectados');
+  assert.strictEqual(field.value, 'HayserS_, Feruub');
+});
+
+test('buildStatusEmbed omite Conectados cuando la lista viene vacia', () => {
+  const { embed } = buildStatusEmbed({
+    online: true, players: { online: 0, max: 20, list: [] }, motd: 'Hola', iconBase64: null,
+  });
+  const field = embed.data.fields.find((f) => f.name === 'Conectados');
+  assert.strictEqual(field, undefined);
+});

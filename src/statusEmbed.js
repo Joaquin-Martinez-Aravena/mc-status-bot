@@ -32,6 +32,13 @@ function buildStatusEmbed(status) {
         value: `${status.players.online}/${status.players.max}`,
         inline: true,
       });
+
+    // Lista de conectados (si el server la entrega). Se recorta al limite de
+    // 1024 caracteres que impone Discord en el valor de un field.
+    const list = status.players.list;
+    if (Array.isArray(list) && list.length > 0) {
+      embed.addFields({ name: 'Conectados', value: list.join(', ').slice(0, 1024) });
+    }
   } else {
     embed
       .setColor(RED)
@@ -40,7 +47,7 @@ function buildStatusEmbed(status) {
   }
 
   if (status.motd) {
-    embed.addFields({ name: 'MOTD', value: status.motd });
+    embed.addFields({ name: 'MOTD', value: status.motd.slice(0, 1024) });
   }
 
   if (status.iconBase64 && status.iconBase64.startsWith('data:image/png;base64,')) {

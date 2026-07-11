@@ -7,7 +7,7 @@ const DEFAULT_PORT = 25565;
 const DEFAULT_TIMEOUT_MS = 8000;
 const DEFAULT_RETRIES = 3;
 const PROTOCOL_VERSION = 767; // 1.21; solo se usa para el handshake de status
-const OFFLINE = { online: false, players: { online: 0, max: 0 }, motd: '', iconBase64: null };
+const OFFLINE = { online: false, players: { online: 0, max: 0, list: [] }, motd: '', iconBase64: null };
 
 // --- Codificacion del protocolo -------------------------------------------
 
@@ -70,6 +70,14 @@ function isReallyOnline(data) {
   return true;
 }
 
+// Extrae los nombres de la muestra de jugadores conectados (data.players.sample).
+// Muchos servers la entregan parcial o vacia; devolvemos [] si no hay.
+function extractPlayerList(data) {
+  const sample = data?.players?.sample;
+  if (!Array.isArray(sample)) return [];
+  return sample.map((p) => p && p.name).filter((name) => typeof name === 'string');
+}
+
 // Convierte la respuesta SLP en nuestro objeto de estado normalizado.
 function normalize(data) {
   return {
@@ -77,6 +85,7 @@ function normalize(data) {
     players: {
       online: data?.players?.online ?? 0,
       max: data?.players?.max ?? 0,
+      list: extractPlayerList(data),
     },
     motd: motdToText(data?.description).trim(),
     iconBase64: data?.favicon ?? null,
@@ -163,4 +172,4 @@ async function getServerStatus(address, options = {}) {
   return { ...OFFLINE };
 }
 
-module.exports = { getServerStatus, normalize, isReallyOnline, motdToText };
+module.exports = { getServerStatus, normalize, isReallyOnline, motdToText, extractPlayerList };

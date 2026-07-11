@@ -1,11 +1,11 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { normalize, isReallyOnline, motdToText } = require('../src/mcStatus');
+const { normalize, isReallyOnline, motdToText, extractPlayerList } = require('../src/mcStatus');
 
 test('normalize marca online un server que respondio el SLP', () => {
   const data = {
     version: { name: 'Paper 1.21' },
-    players: { online: 4, max: 20 },
+    players: { online: 4, max: 20, sample: [{ name: 'HayserS_' }, { name: 'Feruub' }] },
     description: 'Bienvenido al server',
     favicon: 'data:image/png;base64,AAAA',
   };
@@ -13,8 +13,14 @@ test('normalize marca online un server que respondio el SLP', () => {
   assert.strictEqual(s.online, true);
   assert.strictEqual(s.players.online, 4);
   assert.strictEqual(s.players.max, 20);
+  assert.deepStrictEqual(s.players.list, ['HayserS_', 'Feruub']);
   assert.strictEqual(s.motd, 'Bienvenido al server');
   assert.strictEqual(s.iconBase64, 'data:image/png;base64,AAAA');
+});
+
+test('extractPlayerList devuelve [] cuando no hay sample', () => {
+  assert.deepStrictEqual(extractPlayerList({ players: { online: 3, max: 20 } }), []);
+  assert.deepStrictEqual(extractPlayerList({}), []);
 });
 
 test('motdToText aplana un MOTD con componentes y extra', () => {
